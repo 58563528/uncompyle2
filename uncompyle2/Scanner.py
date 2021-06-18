@@ -487,7 +487,8 @@ class Scanner:
         prelim = self.all_instr(start, end, stmt_opcodes)
 
         stmts = self.stmts = set(prelim)
-                
+        prev = self.prev
+            
         pass_stmts = set()
         for seq in stmt_opcode_seqs:
             for i in self.op_range(start, end-(len(seq)+1)):
@@ -499,7 +500,7 @@ class Scanner:
                     i += self.op_size(code[i])
                     
                 if match:
-                    i = self.prev[i]
+                    i = prev[i]
                     stmts.add(i)
                     pass_stmts.add(i)
         
@@ -515,22 +516,27 @@ class Scanner:
         for s in stmt_list:
             if code[s] == JA and s not in pass_stmts:
                 target = self.get_target(s)
-                if target > s or self.lines[last_stmt].l_no == self.lines[s].l_no:
+                if target > s:
                     stmts.remove(s)
                     continue
-                j = self.prev[s]
+                if self.lines[last_stmt].l_no == self.lines[s].l_no:
+                    if not POP_TOP == code[prev[s]] == code[prev[prev[s]]] == code[prev[prev[prev[s]]]]:
+                        stmts.remove(s)
+                        continue
+                        
+                j = prev[s]
                 while code[j] == JA:
-                    j = self.prev[j]
+                    j = prev[j]
                 if code[j] == LIST_APPEND: #list comprehension
                     stmts.remove(s)
                     continue
-            elif code[s] == POP_TOP and code[self.prev[s]] == ROT_TWO:
+            elif code[s] == POP_TOP and code[prev[s]] == ROT_TWO:
                 stmts.remove(s)
                 continue
             elif code[s] in designator_ops:
-                j = self.prev[s]
+                j = prev[s]
                 while code[j] in designator_ops:
-                    j = self.prev[j]
+                    j = prev[j]
                 if code[j] == FOR_ITER:
                     stmts.remove(s)
                     continue
@@ -888,12 +894,11 @@ class Scanner:
 
         elif op in (JUMP_IF_FALSE_OR_POP, JUMP_IF_TRUE_OR_POP):
             target = self.get_target(pos, op)
-#            if target > pos:
-#                unop_target = self.last_instr(pos, target, JF, target)
-#                if unop_target and code[unop_target+3] != ROT_TWO:
-#                    self.fixed_jumps[pos] = unop_target
-#                else:
-            self.fixed_jumps[pos] = self.restrict_to_parent(target, parent)
+            rtarget = self.restrict_to_parent(target, parent)
+            if target != rtarget and code[target] == RETURN_VALUE and code[self.prev[rtarget]] == RETURN_VALUE:
+                self.fixed_jumps[pos] = self.prev[rtarget];
+            else:
+                self.fixed_jumps[pos] = rtarget
                 
                 
              
