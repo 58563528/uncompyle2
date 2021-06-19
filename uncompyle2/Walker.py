@@ -164,9 +164,9 @@ TABLE_DIRECT = {
     'DELETE_FAST':	( '%|del %{pattr}\n', ),
     'DELETE_NAME':	( '%|del %{pattr}\n', ),
     'DELETE_GLOBAL':	( '%|del %{pattr}\n', ),
-    'delete_subscr':	( '%|del %c[%c]\n', 0, 1,),
     'binary_subscr':	( '%c[%p]', 0, (1,100)),
-    'store_subscr':	( '%c[%c]', 0, 1),
+    'store_subscr':	( '%p[%c]', (0,2), 1), #designator not expr, so needs precedence
+    'delete_subscr':	( '%|del %p[%c]\n', (0,2), 1,), #stmt not expr, so needs precedence
     'STORE_FAST':	( '%{pattr}', ),
     'STORE_NAME':	( '%{pattr}', ),
     'STORE_GLOBAL':	( '%{pattr}', ),
